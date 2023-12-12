@@ -22,5 +22,8 @@ This project aims to recreate the functionality of nanoGPT using transformers an
 ```python
 import transformers
 from bilingual_model import BilingualModel
+```
+
+
 
 
