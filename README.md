@@ -18,11 +18,9 @@ This project aims to recreate the functionality of nanoGPT using transformers an
 
 ## Usage
 
-1. Import the necessary modules: 
-```python
-import transformers
-from bilingual_model import BilingualModel
-```
+1. Run bigram model from bigram folder
+
+
 
 
 
