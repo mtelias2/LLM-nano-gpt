@@ -16,11 +16,6 @@ This project aims to recreate the functionality of nanoGPT using transformers an
 1. Clone the repository: `git clone https://github.com/mtelias2/LLM-nano-gpt`
 2. Install the required dependencies: `pip install -r requirements.txt`
 
-## Usage
-
-1. Run bigram model from bigram folder
-
-
 
 
 
