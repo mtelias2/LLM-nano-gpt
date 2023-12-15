@@ -16,7 +16,6 @@ file_name = "input.txt"
 
 file_path = os.path.join(os.getcwd(), "ata", file_name)
 
-
 # hyperparameters
 batch_size = 64  # how many independent sequences will we process in parallel?
 block_size = 256  # what is the maximum context length for predictions?
@@ -32,17 +31,6 @@ dropout = 0.2
 # ------------
 
 torch.manual_seed(1337)
-
-if not os.path.exists(file_path):
-    # Download the file from https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt
-    urllib.request.urlretrieve(url, file_path)
-
-else:
-    # File exists, continue with the rest of the code
-    with open(file_path, "r", encoding="utf-8") as f:
-        text = f.read()
-# wget https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt
-
 
 # here are all the unique characters that occur in this text
 chars = sorted(list(set(text)))
@@ -122,46 +110,24 @@ class Head(nn.Module):
 
 
 class MultiHeadAttention(nn.Module):
-    """Multiple heads of self-attention in parallel"""
+    """multiple heads of self-attention in parallel"""
 
     def __init__(self, num_heads, head_size):
-        """
-        Initialize the MultiHeadAttention module.
-
-        Args:
-            num_heads (int): The number of attention heads.
-            head_size (int): The size of each attention head.
-        """
         super().__init__()
         self.heads = nn.ModuleList([Head(head_size) for _ in range(num_heads)])
         self.proj = nn.Linear(head_size * num_heads, n_embd)
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
-        """
-        Perform forward pass through the MultiHeadAttention module.
-
-        Args:
-            x (torch.Tensor): The input tensor.
-
-        Returns:
-            torch.Tensor: The output tensor.
-        """
         out = torch.cat([h(x) for h in self.heads], dim=-1)
         out = self.dropout(self.proj(out))
         return out
 
 
 class FeedFoward(nn.Module):
-    """A simple linear layer followed by a non-linearity"""
+    """a simple linear layer followed by a non-linearity"""
 
     def __init__(self, n_embd):
-        """
-        Initialize the FeedFoward module.
-
-        Args:
-            n_embd (int): The embedding dimension.
-        """
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(n_embd, 4 * n_embd),
@@ -171,15 +137,6 @@ class FeedFoward(nn.Module):
         )
 
     def forward(self, x):
-        """
-        Perform forward pass through the FeedFoward module.
-
-        Args:
-            x (torch.Tensor): The input tensor.
-
-        Returns:
-            torch.Tensor: The output tensor.
-        """
         return self.net(x)
 
 
@@ -187,13 +144,7 @@ class Block(nn.Module):
     """Transformer block: communication followed by computation"""
 
     def __init__(self, n_embd, n_head):
-        """
-        Initialize the Block module.
-
-        Args:
-            n_embd (int): The embedding dimension.
-            n_head (int): The number of attention heads.
-        """
+        # n_embd: embedding dimension, n_head: the number of heads we'd like
         super().__init__()
         head_size = n_embd // n_head
         self.sa = MultiHeadAttention(n_head, head_size)
@@ -202,15 +153,6 @@ class Block(nn.Module):
         self.ln2 = nn.LayerNorm(n_embd)
 
     def forward(self, x):
-        """
-        Perform forward pass through the Block module.
-
-        Args:
-            x (torch.Tensor): The input tensor.
-
-        Returns:
-            torch.Tensor: The output tensor.
-        """
         x = x + self.sa(self.ln1(x))
         x = x + self.ffwd(self.ln2(x))
         return x
@@ -218,13 +160,12 @@ class Block(nn.Module):
 
 class GPTLanguageModel(nn.Module):
     def __init__(self):
-        """
-        Initializes the GPT model.
-        """
         super().__init__()
-        # each token directly reads off the logits for the next token from a lookup table
+        # each token directly reads off the logits for the next token from a lookup tabl
         self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
+
         self.position_embedding_table = nn.Embedding(block_size, n_embd)
+
         self.blocks = nn.Sequential(
             *[Block(n_embd, n_head=n_head) for _ in range(n_layer)]
         )
@@ -234,26 +175,7 @@ class GPTLanguageModel(nn.Module):
         # better init, not covered in the original GPT video, but important, will cover in followup video
         self.apply(self._init_weights)
 
-    def _init_weights(self, module):
-        if isinstance(module, nn.Linear):
-            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
-            if module.bias is not None:
-                torch.nn.init.zeros_(module.bias)
-        elif isinstance(module, nn.Embedding):
-            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
-
     def forward(self, idx, targets=None):
-        """
-        Forward pass of the model.
-
-        Args:
-            idx (torch.Tensor): A (B,T) tensor of integers representing the input tokens.
-            targets (torch.Tensor, optional): A (B,T) tensor of integers representing the target tokens. Defaults to None.
-
-        Returns:
-            torch.Tensor: A (B,T,vocab_size) tensor representing the logits.
-            torch.Tensor: The loss value, if targets are provided; otherwise, None.
-        """
         B, T = idx.shape
 
         # idx and targets are both (B,T) tensor of integers
@@ -275,16 +197,6 @@ class GPTLanguageModel(nn.Module):
         return logits, loss
 
     def generate(self, idx, max_new_tokens):
-        """
-        Generates new tokens based on the given index and maximum number of new tokens.
-
-        Args:
-            idx (torch.Tensor): A (B, T) array of indices in the current context.
-            max_new_tokens (int): The maximum number of new tokens to generate.
-
-        Returns:
-            torch.Tensor: A (B, T+max_new_tokens) array of indices representing the generated tokens.
-        """
         # idx is (B, T) array of indices in the current context
         for _ in range(max_new_tokens):
             # crop idx to the last block_size tokens
@@ -300,6 +212,274 @@ class GPTLanguageModel(nn.Module):
             # append sampled index to the running sequence
             idx = torch.cat((idx, idx_next), dim=1)  # (B, T+1)
         return idx
+
+
+model = GPTLanguageModel()
+m = model.to(device)
+# print the number of parameters in the model
+print(sum(p.numel() for p in m.parameters()) / 1e6, "M parameters")
+
+# create a PyTorch optimizer
+optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+
+for iter in range(max_iters):
+    # every once in a while evaluate the loss on train and val sets
+    if iter % eval_interval == 0 or iter == max_iters - 1:
+        losses = estimate_loss()
+        print(
+            f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}"
+        )
+
+    # sample a batch of data
+    xb, yb = get_batch("train")
+
+    # evaluate the loss
+    logits, loss = model(xb, yb)
+    optimizer.zero_grad(set_to_none=True)
+    loss.backward()
+    optimizer.step()
+
+# generate from the model
+context = torch.zeros((1, 1), dtype=torch.long, device=device)
+print(decode(m.generate(context, max_new_tokens=500)[0].tolist()))
+# open('more.txt', 'w').write(decode(m.generate(context, max_new_tokens=10000)[0].tolist()))
+# hyperparameters
+batch_size = 64  # how many independent sequences will we process in parallel?
+block_size = 256  # what is the maximum context length for predictions?
+max_iters = 5000
+eval_interval = 500
+learning_rate = 3e-4
+device = "cuda" if torch.cuda.is_available() else "cpu"
+eval_iters = 200
+n_embd = 384
+n_head = 6
+n_layer = 6
+dropout = 0.2
+# ------------
+
+torch.manual_seed(1337)
+
+if not os.path.exists(file_path):
+    # Download the file from https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt
+    urllib.request.urlretrieve(url, file_path)
+
+else:
+    # File exists, continue with the rest of the code
+    with open(file_path, "r", encoding="utf-8") as f:
+        text = f.read()
+# wget https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt
+
+
+# here are all the unique characters that occur in this text
+chars = sorted(list(set(text)))
+vocab_size = len(chars)
+# create a mapping from characters to integers
+stoi = {ch: i for i, ch in enumerate(chars)}
+itos = {i: ch for i, ch in enumerate(chars)}
+encode = lambda s: [
+    stoi[c] for c in s
+]  # encoder: take a string, output a list of integers
+decode = lambda l: "".join(
+    [itos[i] for i in l]
+)  # decoder: take a list of integers, output a string
+
+# Train and test splits
+data = torch.tensor(encode(text), dtype=torch.long)
+n = int(0.9 * len(data))  # first 90% will be train, rest val
+train_data = data[:n]
+val_data = data[n:]
+
+
+# data loading
+def get_batch(split):
+    """
+    Generate a small batch of data of inputs x and targets y.
+
+    Parameters:
+    - split (str): The split of the data to generate the batch from. Must be "train" or "val".
+
+    Returns:
+    - x (torch.Tensor): A tensor of shape (batch_size, block_size) representing the inputs.
+    - y (torch.Tensor): A tensor of shape (batch_size, block_size) representing the targets.
+    """
+    # generate a small batch of data of inputs x and targets y
+
+    data = train_data if split == "train" else val_data
+    ix = torch.randint(len(data) - block_size, (batch_size,))
+    x = torch.stack([data[i : i + block_size] for i in ix])
+    y = torch.stack([data[i + 1 : i + block_size + 1] for i in ix])
+
+    x, y = x.to(device), y.to(device)
+
+    return x, y
+
+
+@torch.no_grad()
+def estimate_loss():
+    """
+    Estimates the loss for the current model.
+
+    This function calculates the loss for the current model by iterating over the "train" and "val" splits. For each split, it obtains a batch of data using the `get_batch` function, and then predicts the output using the `model` and calculates the loss. The losses are stored in a tensor and the mean loss is calculated for each split. Finally, the model is set back to training mode.
+
+    Returns:
+        dict: A dictionary containing the mean losses for the "train" and "val" splits.
+    """
+    out = {}
+    model.eval()
+    for split in ["train", "val"]:
+        losses = torch.zeros(eval_iters)
+        for k in range(eval_iters):
+            X, Y = get_batch(split)
+            logits, loss = model(X, Y)
+            losses[k] = loss.item()
+        out[split] = losses.mean()
+    model.train()
+    return out
+
+
+class Head(nn.Module):
+    """one head of self-attention"""
+
+    def __init__(self, head_size):
+        """
+        Initializes the instance of the class with the given head_size.
+
+        Parameters:
+            head_size (int): The size of the head.
+
+        Returns:
+            None
+        """
+
+    def forward(self, x):
+        """
+        Computes the forward pass of the attention mechanism.
+
+        Args:
+            x (torch.Tensor): The input tensor of size (batch, time-step, channels).
+
+        Returns:
+            torch.Tensor: The output tensor of size (batch, time-step, head size).
+        """
+        # input of size (batch, time-step, channels)
+        # output of size (batch, time-step, head size)
+
+
+class MultiHeadAttention(nn.Module):
+    """Multiple heads of self-attention in parallel"""
+
+    def __init__(self, num_heads, head_size):
+        """
+        Initialize the MultiHeadAttention module.
+
+        Args:
+            num_heads (int): The number of attention heads.
+            head_size (int): The size of each attention head.
+        """
+
+    def forward(self, x):
+        """
+        Perform forward pass through the MultiHeadAttention module.
+
+        Args:
+            x (torch.Tensor): The input tensor.
+
+        Returns:
+            torch.Tensor: The output tensor.
+        """
+
+
+class FeedFoward(nn.Module):
+    """A simple linear layer followed by a non-linearity"""
+
+    def __init__(self, n_embd):
+        """
+        Initialize the FeedFoward module.
+
+        Args:
+            n_embd (int): The embedding dimension.
+        """
+
+    def forward(self, x):
+        """
+        Perform forward pass through the FeedFoward module.
+
+        Args:
+            x (torch.Tensor): The input tensor.
+
+        Returns:
+            torch.Tensor: The output tensor.
+        """
+
+
+class Block(nn.Module):
+    """Transformer block: communication followed by computation"""
+
+    def __init__(self, n_embd, n_head):
+        """
+        Initialize the Block module.
+
+        Args:
+            n_embd (int): The embedding dimension.
+            n_head (int): The number of attention heads.
+        """
+
+    def forward(self, x):
+        """
+        Perform forward pass through the Block module.
+
+        Args:
+            x (torch.Tensor): The input tensor.
+
+        Returns:
+            torch.Tensor: The output tensor.
+        """
+
+
+class GPTLanguageModel(nn.Module):
+    def __init__(self):
+        """
+        Initializes the GPT model.
+        """
+        super().__init__()
+        # each token directly reads off the logits for the next token from a lookup table
+
+    def _init_weights(self, module):
+        """
+        Initializes the weights of the given module.
+
+        Parameters:
+            module (nn.Module): The module whose weights need to be initialized.
+
+        Returns:
+            None
+        """
+
+    def forward(self, idx, targets=None):
+        """
+        Forward pass of the model.
+
+        Args:
+            idx (torch.Tensor): A (B,T) tensor of integers representing the input tokens.
+            targets (torch.Tensor, optional): A (B,T) tensor of integers representing the target tokens. Defaults to None.
+
+        Returns:
+            torch.Tensor: A (B,T,vocab_size) tensor representing the logits.
+            torch.Tensor: The loss value, if targets are provided; otherwise, None.
+        """
+
+    def generate(self, idx, max_new_tokens):
+        """
+        Generates new tokens based on the given index and maximum number of new tokens.
+
+        Args:
+            idx (torch.Tensor): A (B, T) array of indices in the current context.
+            max_new_tokens (int): The maximum number of new tokens to generate.
+
+        Returns:
+            torch.Tensor: A (B, T+max_new_tokens) array of indices representing the generated tokens.
+        """
+        # idx is (B, T) array of indices in the current context
 
 
 model = GPTLanguageModel()
