@@ -14,7 +14,7 @@ url = "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshake
 file_name = "input.txt"
 
 
-file_path = os.path.join(os.getcwd(), "data", file_name)
+file_path = os.path.join(os.getcwd(), "Data", file_name)
 
 
 if not os.path.exists(file_path):
