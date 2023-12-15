@@ -14,7 +14,10 @@ url = "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshake
 file_name = "input.txt"
 
 
-file_path = os.path.join(os.getcwd(), "ata", file_name)
+file_path = os.path.join(os.getcwd(), "Data", file_name)
+
+with open(file_path, "r", encoding="utf-8") as f:
+    text = f.read()
 
 # hyperparameters
 batch_size = 64  # how many independent sequences will we process in parallel?
@@ -174,6 +177,14 @@ class GPTLanguageModel(nn.Module):
 
         # better init, not covered in the original GPT video, but important, will cover in followup video
         self.apply(self._init_weights)
+
+    def _init_weights(self, module):
+        if isinstance(module, nn.Linear):
+            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
+            if module.bias is not None:
+                torch.nn.init.zeros_(module.bias)
+        elif isinstance(module, nn.Embedding):
+            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
     def forward(self, idx, targets=None):
         B, T = idx.shape
