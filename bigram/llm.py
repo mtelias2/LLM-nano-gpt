@@ -7,10 +7,24 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 import tiktoken
 from sklearn.model_selection import train_test_split
+import os
+import urllib.request
 
-# reading input file just to check
-with open("input.txt", "r", encoding="utf-8") as f:
-    text = f.read()
+url = "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt"
+file_name = "input.txt"
+
+
+file_path = os.path.join(os.getcwd(), "data", file_name)
+
+
+if not os.path.exists(file_path):
+    # Download the file from https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt
+    urllib.request.urlretrieve(url, file_path)
+
+else:
+    # File exists, continue with the rest of the code
+    with open(file_path, "r", encoding="utf-8") as f:
+        text = f.read()
 
 unique_chars = sorted(list(set(text)))
 vocab_size = len(unique_chars)
